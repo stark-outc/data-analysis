@@ -1,0 +1,36 @@
+import pandas as pd
+import plotly.express as px
+zh = pd.read_csv(r'D:\BaiduNetdiskDownload\项目03知乎数据清洗整理和结论研究_资料\知乎数据_201701.csv',engine='python')
+dy = pd.read_csv(r'D:\BaiduNetdiskDownload\项目03知乎数据清洗整理和结论研究_资料\六普常住人口数.csv',engine='python')
+zh.isnull().sum()
+
+for c in zh.columns:
+    if zh[c].dtype=='object':
+        zh[c].fillna('缺失数据',inplace=True)
+    else: zh[c].fillna(0,inplace=True)
+zh.head()
+data=zh.groupby('居住地').count()
+dy['city']=dy['地区'].str[:-1]
+data_1=pd.merge(data,dy,left_index=True,right_on='city',how='inner')[['_id','city','常住人口']]
+data_1['知友密度'] =data_1['_id']/data_1['常住人口']
+data_1.head()
+def data_re(df,*cols):
+    df_n=df.copy()
+    for col in cols:
+        ma = df[col].max()
+        mi = df[col].min()
+        df_n[col+'_n'] = (df_n[col]-mi)/(ma-mi)*100
+    return df_n
+result = data_re(data_1,'_id','知友密度')
+result.sort_values('_id_n',ascending=False,inplace=True)
+result_20 = result.iloc[:20]
+fig = px.bar(result_20,x='_id_n',y='city',color='_id_n')
+fig.update_layout(yaxis={'categoryorder':'total ascending'})
+fig.show()
+
+xx = zh.groupby('教育经历').sum()[['关注','关注者']].drop(['缺失数据','大学','本科'])
+xx.sort_values('关注',inplace=True,ascending=False)
+xx_20=xx.iloc[:20].reset_index()
+xx.head()
+pig = px.scatter(xx_20,x='关注',y='关注者',text='教育经历')
+pig.show()
